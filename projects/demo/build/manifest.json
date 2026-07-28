@@ -1,0 +1,28 @@
+{
+  "scenes": {
+    "01": {
+      "audio_ok": true,
+      "duration": 8.016,
+      "asset": "assets/scene_01.mp4",
+      "asset_kind": "video",
+      "asset_id": "pexels-v-5651777",
+      "asset_ok": true
+    },
+    "02": {
+      "audio_ok": true,
+      "duration": 6.936,
+      "asset": "assets/scene_02.mp4",
+      "asset_kind": "video",
+      "asset_id": "pexels-v-38358369",
+      "asset_ok": true
+    },
+    "03": {
+      "audio_ok": true,
+      "duration": 5.592,
+      "asset": "assets/scene_03.mp4",
+      "asset_kind": "video",
+      "asset_id": "pexels-v-6714928",
+      "asset_ok": true
+    }
+  }
+}

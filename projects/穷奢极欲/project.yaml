@@ -1,0 +1,205 @@
+# 穷奢极欲 — 世界首富们的钱到底怎么花？
+# 风格：数据驱动 + 冷静客观带调侃 + 中文解说
+# 目标长度：~5 分钟 (25 scenes × ~12s)
+project:
+  title: "世界首富们的钱到底怎么花？揭秘顶级富豪的烧钱日常"
+  niche: "luxury"
+  target_duration: 300
+  voice: "zh-CN-YunxiNeural"
+  rate: "+0%"
+  subtitle_mode: "sentence"
+  bgm: "bgm.mp3"
+  bgm_volume: 0.10
+  orientation: "landscape"
+
+scenes:
+  # ==================== HOOK (1 scene) ====================
+  - id: 1
+    section: "hook"
+    text: "马斯克每秒赚两千两百美元。但他花掉这笔钱，只需要零点几秒。"
+    keywords: [elon musk portrait, man counting cash, luxury watch closeup]
+    shot_hint: "closeup"
+    mood: "dark"
+
+  # ==================== SETUP (3 scenes) ====================
+  - id: 2
+    section: "setup"
+    text: "顶级富豪的消费逻辑和普通人完全不同。我们纠结性价比，他们只关心想不想要。"
+    keywords: [rich man suit, luxury store interior, shopping bag designer]
+    shot_hint: "closeup"
+    mood: "dark"
+
+  - id: 3
+    section: "setup"
+    text: "私人飞机、超级游艇、限量超跑、天价艺术品。今天我们就来扒一扒，有钱人的钱到底花在哪里。"
+    keywords: [private jet runway, superyacht ocean, sports car garage]
+    shot_hint: "aerial"
+    mood: "energetic"
+
+  - id: 4
+    section: "setup"
+    text: "这些消费在普通人看来是天文数字，但在他们眼里，只是日常开销。"
+    keywords: [city skyline luxury, skyscraper night view, money falling slowmotion]
+    shot_hint: "aerial"
+    mood: "dark"
+
+  # ==================== BODY — 私人飞机 (4 scenes) ====================
+  - id: 5
+    section: "body"
+    text: "先说私人飞机。湾流G700，售价七千五百万美元。富豪买它就像你买一辆代步车。"
+    keywords: [gulfstream jet airport, private plane interior, luxury aircraft cockpit]
+    shot_hint: "aerial"
+    mood: "energetic"
+
+  - id: 6
+    section: "body"
+    text: "但这只是开始。每年的维护费用、机组人员工资、停机费，加起来超过一百万美元。"
+    keywords: [jet maintenance hangar, pilot cockpit controls, airport tarmac plane]
+    shot_hint: "closeup"
+    mood: "dark"
+
+  - id: 7
+    section: "body"
+    text: "马斯克的湾流G650ER和贝佐斯的庞巴迪环球7500。对他们来说，时间比金钱贵一万倍。"
+    keywords: [business jet flying, private jet cabin, airplane window cloud]
+    shot_hint: "aerial"
+    mood: "energetic"
+
+  - id: 8
+    section: "body"
+    text: "私人飞机市场每年增长百分之五。去年全球富豪买了超过七百架新公务机。"
+    keywords: [private jets parked row, airport executive terminal, jet taking off]
+    shot_hint: "aerial"
+    mood: "calm"
+
+  # ==================== BODY — 超级游艇 (4 scenes) ====================
+  - id: 9
+    section: "body"
+    text: "再来看超级游艇。阿布拉莫维奇的日蚀号，造价五亿美元，配有导弹防御系统。"
+    keywords: [luxury yacht ocean, megayacht sea view, superyacht harbor]
+    shot_hint: "aerial"
+    mood: "energetic"
+
+  - id: 10
+    section: "body"
+    text: "这艘游艇全长一百六十二米，两个直升机停机坪，一个室内泳池，还有一艘私人潜水艇。"
+    keywords: [yacht helicopter deck, yacht swimming pool pool, luxury boat interior]
+    shot_hint: "aerial"
+    mood: "calm"
+
+  - id: 11
+    section: "body"
+    text: "每年运营成本两千万美元。这笔钱够一个普通人花十几辈子。"
+    keywords: [yacht crew working, champagne bottle celebration, yacht deck sunset]
+    shot_hint: "timelapse"
+    mood: "warm"
+
+  - id: 12
+    section: "body"
+    text: "全球最大的二十艘私人游艇，总价值超过五十亿美元。它们大部分时间都停在港口。"
+    keywords: [superyacht fleet marina, mega yacht docked, luxury boats harbor]
+    shot_hint: "aerial"
+    mood: "calm"
+
+  # ==================== BODY — 限量超跑 (4 scenes) ====================
+  - id: 13
+    section: "body"
+    text: "说完了海上，来看看路上跑的。布加迪La Voiture Noire，售价一千两百万美元。"
+    keywords: [bugatti sports car red, luxury car showroom, supercar front view]
+    shot_hint: "closeup"
+    mood: "energetic"
+
+  - id: 14
+    section: "body"
+    text: "全球仅此一台。帕加尼、科尼赛克、法拉利限量款，这些不是代步工具，是行走的艺术品。"
+    keywords: [pagani hypercar driving, ferrari limited edition, sports car engine detail]
+    shot_hint: "slowmotion"
+    mood: "energetic"
+
+  - id: 15
+    section: "body"
+    text: "很多富豪的车库比普通人的房子还贵。几千万美元的车停在里面，落灰都是常态。"
+    keywords: [luxury car garage collection, ferrari lamborghini parked, supercar indoor storage]
+    shot_hint: "closeup"
+    mood: "dark"
+
+  - id: 16
+    section: "body"
+    text: "限量超跑不仅不贬值，有些还在升值。比如迈凯伦F1，二十年前八十万美元，现在两千万。"
+    keywords: [mclaren f1 silver, vintage sports car, classic car auction]
+    shot_hint: "closeup"
+    mood: "calm"
+
+  # ==================== BODY — 天价豪宅 (4 scenes) ====================
+  - id: 17
+    section: "body"
+    text: "然后是豪宅。穆克什·安巴尼的安蒂利亚，二十七层，造价十亿美元。"
+    keywords: [mumbai skyscraper luxury, modern mansion exterior, luxury villa building]
+    shot_hint: "aerial"
+    mood: "energetic"
+
+  - id: 18
+    section: "body"
+    text: "六百个佣人，三个直升机停机坪，六层地下停车场。这套房子一个人根本住不完。"
+    keywords: [luxury mansion interior, grand staircase foyer, large swimming pool estate]
+    shot_hint: "aerial"
+    mood: "calm"
+
+  - id: 19
+    section: "body"
+    text: "比尔·盖茨的世外桃源，占地六万六千平方英尺，造价六千三百万美元。"
+    keywords: [modern lake house, luxury waterfront estate, mansion garden estate]
+    shot_hint: "aerial"
+    mood: "warm"
+
+  - id: 20
+    section: "body"
+    text: "但最有意思的是，很多超级豪宅的主人一年只住几周。其余时间，房子和管家在替他们呼吸。"
+    keywords: [empty luxury room, mansion living room, guard gate mansion]
+    shot_hint: "slowmotion"
+    mood: "dark"
+
+  # ==================== BODY — 艺术品投资 (3 scenes) ====================
+  - id: 21
+    section: "body"
+    text: "最后是艺术品投资。达芬奇的救世主，卖出四亿五千万美元，人类历史上最贵的画。"
+    keywords: [art auction gavel, painting gallery museum, renaissance portrait art]
+    shot_hint: "closeup"
+    mood: "calm"
+
+  - id: 22
+    section: "body"
+    text: "富豪们买艺术品不只是审美，更是一种资产配置。每年增值百分之八到十五，跑赢通胀。"
+    keywords: [modern art gallery, abstract painting wall, sculpture exhibition gallery]
+    shot_hint: "closeup"
+    mood: "calm"
+
+  - id: 23
+    section: "body"
+    text: "杰夫·昆斯的不锈钢气球狗，卖九千万美元。对，就是一个气球做的狗雕塑，卖九千万。"
+    keywords: [balloon dog sculpture, jeff koons exhibition, contemporary art white wall]
+    shot_hint: "closeup"
+    mood: "dark"
+
+  # ==================== WRAP-UP (2 scenes) ====================
+  - id: 24
+    section: "body"
+    text: "顶级富豪的消费逻辑很简单：买时间、买稀缺、买体验。普通人追求性价比，他们要的是独一无二。"
+    keywords: [private island beach, champagne glass toast, sunset yacht party]
+    shot_hint: "aerial"
+    mood: "warm"
+
+  - id: 25
+    section: "body"
+    text: "全球最富有的百分之一人群，控制着百分之四十四的财富。这个差距还在扩大。"
+    keywords: [city financial district, world map globe, stock exchange trading floor]
+    shot_hint: "aerial"
+    mood: "dark"
+
+  # ==================== CTA (1 scene) ====================
+  - id: 26
+    section: "cta"
+    text: "点赞关注，下期带你看富豪们的避税秘密。穷奢极欲，我们下期见。"
+    keywords: [subscribe button animation, notification bell icon, youtube red play]
+    shot_hint: "closeup"
+    mood: "warm"

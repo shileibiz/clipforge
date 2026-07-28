@@ -1,0 +1,24 @@
+# ClipForge 项目配置 —— 一个场景 = 一段口播 + 一个画面素材
+title: 示例:三分钟看懂复利
+voice: zh-CN-YunxiNeural        # edge-tts 声音, 英文可用 en-US-AndrewNeural
+rate: "+8%"                     # 语速微调
+subtitle_mode: sentence         # sentence=按句均摊时间(中文推荐) / word=edge-tts词级时间轴
+bgm: ""                         # 可选: BGM 文件路径(相对项目目录), 自动降到 12% 音量循环
+bgm_volume: 0.12
+# bgm_pool:                     # 可选: BGM 池(替代 bgm), 从 pool 中随机选一首
+#   - path: music/upbeat.mp3
+#     tags: [轻松, 励志, 科技感]
+#   - path: music/cinematic.mp3
+#     tags: [科技感, 震撼]
+orientation: landscape          # landscape=1920x1080 / portrait=1080x1920(竖版)
+
+scenes:
+  - text: 你有没有想过,为什么巴菲特99%的财富是在50岁之后才赚到的?答案只有两个字:复利。
+    keywords: [money growth, compound interest]   # 英文搜索词,留空则用 DeepSeek 自动提取
+    asset_type: video                             # video / image / auto
+  - text: 假设你每个月定投一千元,年化收益百分之八,三十年后你会拥有接近一百五十万。
+    keywords: [stock chart, investment]
+    asset_type: video
+  - text: 时间才是复利最重要的变量。越早开始,雪球滚得越大。
+    keywords: [snowball, winter mountain]
+    asset_type: video

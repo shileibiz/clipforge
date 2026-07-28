@@ -1,0 +1,11 @@
+# Sensitive
+.env
+
+# Large assets
+music/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/

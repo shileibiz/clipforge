@@ -736,6 +736,156 @@ def cmd_check(proj: Path):
     log("QC 通过 ✅ 可上传 output/final.mp4 (+ final.srt / thumbnail.jpg)")
 
 
+# ---------------- wechat_video (竖屏图文成片) ----------------
+
+
+def _find_images(proj: Path) -> list:
+    """查找项目中的图片素材（去重后按文件名排序）。"""
+    img_exts = ("*.jpg", "*.jpeg", "*.png", "*.webp")
+    candidates = []
+    for ext in img_exts:
+        candidates.extend(proj.glob(ext))
+    for sub in ("formatted_raphael", "assets"):
+        d = proj / sub
+        if d.exists():
+            for ext in img_exts:
+                candidates.extend(d.glob(ext))
+    seen = {}
+    for p in candidates:
+        seen.setdefault(p.name.lower(), p)
+    return sorted(seen.values(), key=lambda p: p.name)
+
+
+def cmd_wechat_video(proj: Path, title: str = ""):
+    """竖屏图文成片：文章 .md → TTS → 配图轮播 → 字幕 → 1080×1920 MP4"""
+    # ---------- 1. 读文章 ----------
+    mds = sorted(proj.glob("*.md"))
+    if not mds:
+        die(f"在 {proj} 中找不到 .md 文章文件")
+    raw = mds[0].read_text(encoding="utf-8")
+    # 去 YAML front matter
+    body = re.sub(r"^---\n.*?\n---\n", "", raw, flags=re.DOTALL)
+    # 提取标题
+    if not title:
+        m = re.search(r"^#\s+(.+)$", body, re.MULTILINE)
+        title = m.group(1).strip() if m else "无标题"
+    # 去掉 markdown 标题标记后作为口播稿
+    narration = re.sub(r"^#+\s+", "", body, flags=re.MULTILINE).strip()
+    if not narration:
+        die("文章正文为空")
+    log(f"文章标题: {title}  |  正文 {len(narration)} 字")
+
+    # ---------- 2. 找配图 ----------
+    images = _find_images(proj)
+    log(f"配图: {len(images)} 张")
+    for img in images:
+        log(f"  └ {img.name}")
+
+    # ---------- 3. TTS ----------
+    voice = "zh-CN-YunxiNeural"
+    rate = "+0%"
+    build_dir = proj / "build"
+    build_dir.mkdir(parents=True, exist_ok=True)
+    audio_mp3 = build_dir / "wechat_tts.mp3"
+    audio_srt = build_dir / "wechat_srt.srt"
+
+    log("正在生成 TTS 配音 + 字幕…")
+    asyncio.run(_tts_one(narration, voice, rate, audio_mp3, audio_srt, "sentence"))
+    dur = media_duration(audio_mp3)
+    log(f"配音完成 ({dur:.1f}s)")
+
+    # ---------- 4. 渲染竖屏片段 ----------
+    w, h = 1080, 1920  # 竖屏
+    merged = build_dir / "wechat_merged.mp4"
+
+    if images:
+        seg_dur = dur / len(images)
+        # 极短图片保护
+        if seg_dur < 0.8:
+            log(f"每张图仅 {seg_dur:.1f}s，合并为一张长图")
+            seg_dur = dur
+            images = [images[0]]
+        clip_paths = []
+        for i, img_path in enumerate(images):
+            clip_out = build_dir / f"wechat_clip_{i:02d}.mp4"
+            clip_paths.append(clip_out)
+            if clip_out.exists() and abs(media_duration(clip_out) - seg_dur) < 0.5:
+                log(f"片段{i+1} 已渲染，跳过")
+                continue
+            frames = max(int(seg_dur * FPS), 2)
+            # scale+cover → Ken Burns 缓推
+            vf = (
+                f"scale={w}:{h}:force_original_aspect_ratio=increase,"
+                f"crop={w}:{h},"
+                f"zoompan=z='if(eq(on,1),1,min(zoom+0.0003,1.12))':d={frames}"
+                f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+                f":s={w}x{h}:fps={FPS},setsar=1"
+            )
+            run([
+                "ffmpeg", "-y", "-loop", "1", "-i", str(img_path),
+                "-t", f"{seg_dur:.3f}",
+                "-filter_complex", f"[0:v]{vf}[v]",
+                "-map", "[v]",
+                "-c:v", "libx264", "-preset", PRESET, "-crf", str(CRF),
+                "-pix_fmt", "yuv420p",
+                "-shortest", str(clip_out),
+            ])
+            log(f"  片段{i+1}/{len(images)} ✅ ({seg_dur:.1f}s)")
+        # concat 拼接（视频无音轨）
+        concat_txt = build_dir / "wechat_concat.txt"
+        concat_txt.write_text(
+            "\n".join(f"file '{p.resolve()}'" for p in clip_paths),
+            encoding="utf-8",
+        )
+        run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "-i", str(concat_txt),
+            "-c", "copy",
+            str(merged),
+        ])
+        log("视频片段已拼接")
+    else:
+        # 无配图 → 纯色背景 + 标题文字
+        log("无配图，生成文字背景视频")
+        font_path = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
+        # 单行标题，居中显示
+        bg_filter = (
+            f"color=s={w}x{h}:c=#1a1a2e:d={dur:.3f}:r={FPS}[bg];"
+            f"[bg]drawtext="
+            f"text='{title}':"
+            f"fontcolor=white:fontsize=56:"
+            f"x=(w-text_w)/2:y=(h-text_h)/2:"
+            f"fontfile={font_path}[v]"
+        )
+        run([
+            "ffmpeg", "-y",
+            "-filter_complex", bg_filter,
+            "-map", "[v]",
+            "-c:v", "libx264", "-preset", PRESET, "-crf", str(CRF),
+            "-pix_fmt", "yuv420p", "-t", f"{dur:.3f}",
+            str(merged),
+        ])
+        log("纯文字背景视频已生成")
+
+    # ---------- 5. 烧录字幕 + 混入配音 ----------
+    output_dir = proj / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    final = output_dir / "wechat_video.mp4"
+    srt_esc = str(audio_srt.resolve()).replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
+    sub_filter = f"subtitles='{srt_esc}':force_style='{SUB_STYLE}'"
+
+    run([
+        "ffmpeg", "-y", "-i", str(merged), "-i", str(audio_mp3),
+        "-vf", sub_filter,
+        "-map", "0:v:0", "-map", "1:a:0",
+        "-c:v", "libx264", "-preset", PRESET, "-crf", str(CRF),
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
+        "-shortest", str(final),
+    ])
+    log(f"✦ 竖屏图文成片: {final}")
+    log(f"  分辨率 {w}×{h}  |  时长 {dur:.1f}s  |  配图 {len(images)} 张  |  字幕已烧录")
+
+
 # ---------------- batch ----------------
 
 
@@ -811,6 +961,11 @@ def main():
         p = sub.add_parser(cmd)
         p.add_argument("project", help="项目目录")
 
+    # wechat_video 竖屏图文成片
+    wp = sub.add_parser("wechat_video", help="竖屏图文成片（视频号）")
+    wp.add_argument("project", help="项目目录（内含 .md 文章 + 配图）")
+    wp.add_argument("--title", default="", help="文章标题（可选，默认从 markdown 提取）")
+
     # 批量命令（支持多个项目目录或一个 topics.json）
     bp = sub.add_parser("batch", help="批量处理多个项目（无人值守）")
     bp.add_argument("projects", nargs="+",
@@ -833,9 +988,15 @@ def main():
     load_env(proj)
     if args.command != "init" and not shutil.which("ffmpeg"):
         die("未找到 ffmpeg,请先安装")
-    {"init": cmd_init, "tts": cmd_tts, "assets": cmd_assets, "subs": cmd_subs,
-     "render": cmd_render, "check": cmd_check, "all": cmd_all,
-     "clean": cmd_clean}[args.command](proj)
+
+    dispatch = {"init": cmd_init, "tts": cmd_tts, "assets": cmd_assets,
+                "subs": cmd_subs, "render": cmd_render, "check": cmd_check,
+                "all": cmd_all, "clean": cmd_clean}
+
+    if args.command == "wechat_video":
+        cmd_wechat_video(proj, title=args.title)
+    else:
+        dispatch[args.command](proj)
 
 
 if __name__ == "__main__":

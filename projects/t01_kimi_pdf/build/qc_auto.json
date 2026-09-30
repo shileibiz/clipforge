@@ -1,9 +1,0 @@
-{
-  "video": "projects/t01_kimi_pdf/output/final.mp4",
-  "resolution": "1080x1920",
-  "duration_s": 56.6,
-  "audio": true,
-  "audio_codec": "aac",
-  "size_mb": 24.6,
-  "bitrate_kbps": 3648
-}

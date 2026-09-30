@@ -15,3 +15,5 @@ projects/*/build/
 projects/*/output/
 projects/*/audio/
 .archived_clips.json
+projects/*/assets/*
+!projects/*/assets/credits.md

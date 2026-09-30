@@ -539,25 +539,60 @@ def parse_srt(path: Path):
     return items
 
 
+XFADE_DEFAULT = 0.3   # 普通场景间转场
+XFADE_SECTION = 0.5   # section 切换(hook→setup 等)用更长转场
+
+
+def _trans_durs(durations: list, sections: list) -> list:
+    """每对相邻 scene 的转场时长(与 render 的 xfade/acrossfade 参数保持同一套数学)。"""
+    tds = []
+    for i in range(len(durations) - 1):
+        td = XFADE_SECTION if sections[i] != sections[i + 1] else XFADE_DEFAULT
+        # 极短场景保护: 转场时长不超过 scene 的 40%
+        if durations[i] < 1.0:
+            td = min(td, durations[i] * 0.3)
+        tds.append(td)
+    return tds
+
+
+def _scene_starts(cfg: dict, m: dict):
+    """每个 scene 在成片中的真实起点(xfade 重叠已扣除)与全片期望时长。"""
+    N = len(cfg["scenes"])
+    durations = []
+    for i in range(1, N + 1):
+        rec = m["scenes"].get(f"{i:02d}")
+        durations.append(rec["duration"] if rec and rec.get("duration") else 0.0)
+    sections = [sc.get("section", "") for sc in cfg["scenes"]]
+    tds = _trans_durs(durations, sections)
+    starts, t = [], 0.0
+    for i in range(N):
+        starts.append(t)
+        if i < N - 1:
+            t += durations[i] - tds[i]
+    expected = (starts[-1] + durations[-1]) if N else 0.0
+    return starts, expected
+
+
 def cmd_subs(proj: Path):
     cfg = load_project(proj)
     m = load_manifest(proj)
-    offset, idx, out_lines = 0.0, 0, []
+    starts, expected = _scene_starts(cfg, m)
+    idx, out_lines = 0, []
     for i in range(1, len(cfg["scenes"]) + 1):
         key = f"{i:02d}"
         rec = m["scenes"].get(key) or die(f"场景{key} 未跑 tts")
         srt = proj / "audio" / f"scene_{key}.srt"
         if not srt.exists():
             die(f"缺少 {srt},先跑 tts")
+        offset = starts[i - 1]
         for st, en, txt in parse_srt(srt):
             idx += 1
             out_lines.append(f"{idx}\n{fmt_srt_time(st + offset)} --> "
                              f"{fmt_srt_time(en + offset)}\n{txt}\n")
-        offset += rec["duration"]
     final = proj / "build" / "final.srt"
     final.parent.mkdir(exist_ok=True)
     final.write_text("\n".join(out_lines), encoding="utf-8")
-    log(f"全片字幕已生成: {final} (共 {idx} 条, 总长 {offset:.1f}s)")
+    log(f"全片字幕已生成: {final} (共 {idx} 条, 总长 {expected:.1f}s)")
 
 
 # ---------------- render ----------------
@@ -617,31 +652,16 @@ def cmd_render(proj: Path):
 
     N = len(clips)
     merged = build / "merged.mp4"
+    durations = [rec["duration"] for rec in
+                 (m["scenes"].get(f"{i:02d}") for i in range(1, N + 1))]
+    sections = [sc.get("section", "") for sc in cfg["scenes"]]
+    trans_durs = _trans_durs(durations, sections)
 
     if N == 1:
         # 单场景直接拷贝
         shutil.copy2(clips[0], merged)
     else:
         # --- xfade 转场: 相邻 scene 交叉淡入淡出 ---
-        xfade_default = 0.3   # 普通场景间转场
-        xfade_section = 0.5   # section 切换(hook→setup 等)用更长转场
-
-        durations = [rec["duration"] for rec in
-                     (m["scenes"].get(f"{i:02d}") for i in range(1, N + 1))]
-        sections = [sc.get("section", "") for sc in cfg["scenes"]]
-
-        # 计算每对 scene 的转场时长
-        trans_durs = []
-        for i in range(N - 1):
-            if sections[i] != sections[i + 1]:
-                td = xfade_section
-            else:
-                td = xfade_default
-            # 极短场景保护: 转场时长不超过 scene 的 40%
-            if durations[i] < 1.0:
-                td = min(td, durations[i] * 0.3)
-            trans_durs.append(td)
-
         # 构建 filtergraph
         vf_parts = []
         af_parts = []
@@ -649,10 +669,11 @@ def cmd_render(proj: Path):
             vf_parts.append(f"[{i}:v]settb=AVTB[v{i}];")
             af_parts.append(f"[{i}:a]aformat=sample_rates=44100:channel_layouts=stereo[a{i}];")
 
-        offset_v = 0.0
+        # xfade offset = 后一 clip 在成片时间轴上的真实起点(重叠已扣除)
+        starts, _expected = _scene_starts(cfg, m)
         for i in range(1, N):
             td = trans_durs[i - 1]
-            xfoff = max(0, offset_v - td)
+            xfoff = max(0.0, starts[i])
             if i == 1:
                 vf_parts.append(
                     f"[v0][v1]xfade=transition=fade:duration={td:.3f}:offset={xfoff:.3f}[c1];")
@@ -663,7 +684,6 @@ def cmd_render(proj: Path):
                     f"[c{i-1}][v{i}]xfade=transition=fade:duration={td:.3f}:offset={xfoff:.3f}[c{i}];")
                 af_parts.append(
                     f"[ac{i-1}][a{i}]acrossfade=d={td:.3f}[ac{i}];")
-            offset_v += durations[i - 1]
 
         final_v_label = f"c{N-1}"
         final_a_label = f"ac{N-1}"
@@ -683,6 +703,16 @@ def cmd_render(proj: Path):
              "-c:a", "aac", "-b:a", "160k",
              str(merged)])
         log(f"xfade 转场完成 ({N} 场景, {N-1} 处过渡)")
+
+    # 落盘真实场景时间轴(字幕/QC/后续优化的唯一真源)
+    starts, expected = _scene_starts(cfg, m)
+    timeline = {"scene_starts": starts, "scene_durations": durations if N > 1 else
+                [m["scenes"].get("01", {}).get("duration", 0.0)],
+                "trans_durs": trans_durs if N > 1 else [],
+                "expected_duration": round(expected, 3),
+                "final_duration": round(media_duration(merged), 3)}
+    (build / "timeline.json").write_text(
+        json.dumps(timeline, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # --- 字幕(烧录) + BGM + sidechain 闪避 ---
     srt = build / "final.srt"
@@ -751,14 +781,24 @@ def cmd_check(proj: Path):
     info = ffprobe_json(final)
     vdur = float(info["format"]["duration"])
     adur_total = sum(s["duration"] for s in m["scenes"].values())
+    # xfade 重叠会吞掉部分时长, 期望值以 timeline.json(真实时间轴)为准
+    tl_path = proj / "build" / "timeline.json"
+    expected_final = None
+    if tl_path.exists():
+        try:
+            expected_final = json.loads(tl_path.read_text(encoding="utf-8")).get("expected_duration")
+        except Exception:
+            expected_final = None
+    ref_dur = expected_final if expected_final else adur_total
     vstreams = [s for s in info["streams"] if s["codec_type"] == "video"]
     astreams = [s for s in info["streams"] if s["codec_type"] == "audio"]
     w, h = scene_size(cfg)
     report = {
         "file": str(final),
         "duration": round(vdur, 2),
-        "expected_duration": round(adur_total, 2),
-        "duration_delta": round(abs(vdur - adur_total), 2),
+        "expected_duration": round(ref_dur, 2),
+        "raw_narration_duration": round(adur_total, 2),
+        "duration_delta": round(abs(vdur - ref_dur), 2),
         "resolution": f"{vstreams[0]['width']}x{vstreams[0]['height']}" if vstreams else "none",
         "has_audio": bool(astreams),
         "srt_exists": (proj / "output" / "final.srt").exists(),

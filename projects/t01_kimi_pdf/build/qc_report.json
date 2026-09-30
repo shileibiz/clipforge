@@ -1,0 +1,13 @@
+{
+  "file": "projects/t01_kimi_pdf/output/final.mp4",
+  "duration": 56.57,
+  "expected_duration": 56.57,
+  "raw_narration_duration": 58.37,
+  "duration_delta": 0.0,
+  "resolution": "1080x1920",
+  "has_audio": true,
+  "srt_exists": true,
+  "credits_exists": true,
+  "problems": [],
+  "pass": true
+}

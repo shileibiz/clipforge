@@ -9,3 +9,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+
+# Project artifacts
+projects/*/build/
+projects/*/output/
+projects/*/audio/
+.archived_clips.json

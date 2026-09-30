@@ -221,9 +221,16 @@ def split_sentences(text: str):
         if len(p) <= 28:
             out.append(p)
         else:
-            for q in re.split(r"(?<=[,,、])\s*", p):
-                if q.strip():
-                    out.append(q.strip())
+            frags = [q.strip() for q in re.split(r"(?<=[,,、])\s*", p) if q.strip()]
+            # 短片段(顿号/逗号切出的碎片)并入邻段, 避免出现"小红书封面、"式残条
+            merged = []
+            for q in frags:
+                if merged and (len(merged[-1]) <= 6 or
+                               (len(q) <= 6 and len(merged[-1]) + len(q) <= 30)):
+                    merged[-1] += q
+                else:
+                    merged.append(q)
+            out.extend(merged)
     return out or [text.strip()]
 
 

@@ -1,0 +1,31 @@
+# 选题一：Kimi 免费读 PDF（来源：MPT topics_10.md 选题一）
+title: 上百页PDF一秒读完？打工人必备的免费总结神器
+voice: zh-CN-XiaoxiaoNeural
+rate: "+8%"
+subtitle_mode: sentence
+bgm: ""
+bgm_volume: 0.12
+orientation: portrait
+
+scenes:
+  - text: 还在熬夜啃上百页的PDF报告吗？把这个免费网站收藏好，文件拖进去，十秒钟帮你读完。
+    keywords: [tired man laptop night, office desk papers stack, late night work computer]
+    asset_type: auto
+  - text: 它就是Kimi，月之暗面出品的免费AI助手。不用下载软件，打开kimi.moonshot.cn就能用。
+    keywords: [artificial intelligence screen, person using laptop website, typing keyboard closeup]
+    asset_type: video
+  - text: 操作一步到位。把整份PDF直接拖进对话框，行业报告、论文还是合同，几百页都能吃下。
+    keywords: [documents folder files, uploading file computer, paper documents table]
+    asset_type: auto
+  - text: 然后输入一句话：用三句话总结核心观点，并列出关键数据。它几秒钟就给你结构化的答案。
+    keywords: [typing on keyboard hands, computer screen data, digital information screen]
+    asset_type: video
+  - text: 最实用的是追问。哪一节讲了成本？第三章的结论是什么？它都能定位原文，还附带页码引用，不怕它瞎编。
+    keywords: [magnifying glass document, searching files laptop, reading book highlight]
+    asset_type: auto
+  - text: 学生党拿来读论文，几分钟抓住重点。打工人拿来审合同，关键条款一眼锁定。老板拿来读财报，数据对比直接生成。
+    keywords: [students studying library, business meeting documents, financial charts laptop]
+    asset_type: auto
+  - text: 完全免费，中文场景天花板。关注我，下期教你用AI五分钟做好汇报PPT。
+    keywords: [sunrise city skyline, happy person laptop cafe, coffee laptop workspace]
+    asset_type: auto

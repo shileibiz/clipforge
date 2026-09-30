@@ -1,0 +1,31 @@
+# 选题五：即梦AI/Clipdrop 抠图与设计（来源：MPT topics_10.md 选题六）
+title: 不会PS也能做高级设计？打工人都在用的免费抠图与制图神器
+voice: zh-CN-XiaoxiaoNeural
+rate: "+8%"
+subtitle_mode: sentence
+bgm: ""
+bgm_volume: 0.12
+orientation: portrait
+
+scenes:
+  - text: 不会PS，求人抠图还要看脸色？其实鼠标点一下，三秒钟，商业级抠图就出来了。
+    keywords: [graphic designer photoshop editing, frustrated computer design, cutting paper scissors craft]
+    asset_type: auto
+  - text: 打开即梦AI或者Clipdrop，都是免费网页版，不用复杂的注册流程，打开就能干活。
+    keywords: [creative workspace tablet design, computer design software, tablet drawing stylus]
+    asset_type: video
+  - text: 传一张产品图，点击智能抠图，主体瞬间剥离，毛发边缘都处理得干干净净，直接换背景。
+    keywords: [product photography studio, white sneakers product, perfume bottle product]
+    asset_type: auto
+  - text: 更绝的是消除笔。画面里多余的路人、水印、杂物，涂抹一下就消失，背景自动补全。
+    keywords: [photo editing retouching, magic wand cleanup, retouching photo studio]
+    asset_type: auto
+  - text: 还有文字生成图片。输入赛博朋克城市夜景，十秒钟出四张高清插画，做封面做配图都行。
+    keywords: [futuristic neon city night, digital art colorful abstract, cyberpunk aesthetic neon]
+    asset_type: auto
+  - text: 小红书封面、视频号配图、电商主图，模板都给你备好了，换个字就能发，再也不用求设计师。
+    keywords: [social media content phone, flat lay photography props, smartphone photography flatlay]
+    asset_type: auto
+  - text: 工具我都放在评论区了。关注我，每天一个免费AI神器，做自媒体不求人。
+    keywords: [colorful gradient background, desk setup creator workspace, neon sign wall]
+    asset_type: auto

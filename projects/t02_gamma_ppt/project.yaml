@@ -1,0 +1,31 @@
+# 选题二：Gamma 三分钟出 PPT（来源：MPT topics_10.md 选题二）
+title: 老板催着要汇报？用这个免费AI神器3分钟搞定PPT
+voice: zh-CN-XiaoxiaoNeural
+rate: "+8%"
+subtitle_mode: sentence
+bgm: ""
+bgm_volume: 0.12
+orientation: portrait
+
+scenes:
+  - text: 老板下班前要汇报PPT，你还在套模板一页一页改吗？这个AI网站，一段话，三分钟出整套。
+    keywords: [stressed office worker computer, business presentation meeting room, deadline work night]
+    asset_type: auto
+  - text: 它叫Gamma。输入一行主题，比如新产品发布计划，选好风格，点击生成。
+    keywords: [typing laptop modern office, creative desk workspace, hands keyboard closeup]
+    asset_type: video
+  - text: 几十秒后，一整套十页的PPT就出来了。标题页、目录、内容排版、配图、图表，全都有。
+    keywords: [computer screen presentation slides, colorful charts graphs screen, designer screen mockup]
+    asset_type: auto
+  - text: 不满意？直接对话改。第三页换个蓝色主题，这张图换成科技公司。它边聊边改，实时生效。
+    keywords: [chat conversation screen, graphic designer working, color palette design]
+    asset_type: auto
+  - text: 生成的内容不是空壳。大纲是你给的，数据可以自己补，还能插入你本地的图片和图表。
+    keywords: [data charts laptop screen, office documents analysis, person editing photo computer]
+    asset_type: auto
+  - text: 最后一步，一键导出PPTX或者PDF，拿去汇报、发客户都行，排版比新手熬夜做的高级十倍。
+    keywords: [exporting files laptop, business person presentation, professional woman office]
+    asset_type: auto
+  - text: 免费额度每天都能用，足够日常汇报。关注我，评论区扣PPT，下期教你批量做封面图。
+    keywords: [city night lights aerial, typewriter retro desk, coffee laptop workspace]
+    asset_type: auto

@@ -14,7 +14,13 @@
 - [ ] 场景转场(xfade 交叉溶解,注意与 concat copy 模式的取舍)
 - [ ] BGM 侧链闪避(sidechaincompress,替代固定 12% 音量)
 - [ ] 片头/片尾模板(标题卡 drawtext + 订阅提示)
-- [ ] Pexels 429 自动退避重试
+- [x] Pexels 429 自动退避重试
+
+## v0.2.1(IdeaPad 本地化适配, 2026-09-30)
+- [x] 字体可移植:SUB_STYLE 硬编码 WenQuanYi Zen Hei / wechat_video 硬编码 wqy-zenhei.ttc → CJK 字体自动探测(Noto Sans CJK SC → WQY → Droid Sans Fallback),字幕 force_style 与 drawtext 共用一个探测函数,找不到即 fail-fast
+- [x] 竖屏素材源:cmd_assets 三处 API 请求硬编码 orientation:"landscape" → 跟随 project.orientation,竖屏项目传 portrait(避免横屏素材裁切损失)
+- [x] wechat_video 配音音色可配置:CLI --voice / 环境变量 CF_VOICE,默认 zh-CN-YunxiNeural 保持不变
+- [x] Pexels 429 退避重试(v0.2 项提前:批量出片稳定性保障,本机生产环境实测需要)
 
 ## v0.3(与 TubeForge 打通)
 - [x] `topic2yaml`:选题 → DeepSeek 写稿分场景 → 直接产出 project.yaml (tube_forge.py)
@@ -27,3 +33,4 @@
 - 2026-07-26 BGM 池(bgm_pool):project.yaml 支持 bgm_pool 字段,运行随机选一首;向后兼容 bgm 单文件
 - 2026-07-26 TubeForge 改造:新建 tube_forge.py,选题→DeepSeek写稿→分场景→project.yaml;tube-forge run 命令可用
 - 2026-07-26 清理:删除 test_video 下 generate_tts.py/generate_images.py/synthesize_video.py 旧脚本
+- 2026-09-30 v0.2.1 完成:CJK 字体探测命中本机 Noto;竖屏素材参数、wechat_video 音色优先级及 Pexels 429/5xx 退避自测通过;py_compile 通过

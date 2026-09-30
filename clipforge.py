@@ -52,12 +52,6 @@ import requests
 W, H, FPS = 1920, 1080, 30
 CRF = 20
 PRESET = "medium"
-SUB_STYLE = (
-    "FontName=WenQuanYi Zen Hei,FontSize=16,PrimaryColour=&H00FFFFFF,"
-    "OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,"
-    "MarginV=40,Alignment=2"
-)
-
 # ---------------- 基础工具 ----------------
 
 def log(msg):
@@ -67,6 +61,44 @@ def log(msg):
 def die(msg):
     print(f"[clipforge][FATAL] {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def find_cjk_font():
+    """按优先级返回 (字体家族名, 字体文件路径)。"""
+    fonts = (
+        ("Noto Sans CJK SC", "NotoSansCJKsc-*.otf"),
+        ("WenQuanYi Zen Hei", "wqy-zenhei.ttc"),
+        ("Droid Sans Fallback", "DroidSansFallback.ttf"),
+    )
+    roots = (Path.home() / ".local/share/fonts", Path("/usr/local/share/fonts"),
+             Path("/usr/share/fonts"))
+    for family, filename in fonts:
+        if shutil.which("fc-match"):
+            result = subprocess.run(
+                ["fc-match", f"{family}:lang=zh", "-f", "%{family}\n%{file}\n"],
+                capture_output=True, text=True, check=False,
+            )
+            lines = result.stdout.splitlines()
+            if (result.returncode == 0 and len(lines) >= 2
+                    and family in (name.strip() for name in lines[0].split(","))
+                    and Path(lines[1]).is_file()):
+                return family, lines[1]
+        for root in roots:
+            if root.is_dir():
+                for path in root.rglob(filename):
+                    if path.is_file():
+                        return family, str(path)
+    die("未找到中文字体(Noto Sans CJK SC / WenQuanYi Zen Hei / Droid Sans Fallback)")
+
+
+def sub_style(font_name=None):
+    if font_name is None:
+        font_name, _ = find_cjk_font()
+    return (
+        f"FontName={font_name},FontSize=16,PrimaryColour=&H00FFFFFF,"
+        "OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,"
+        "MarginV=40,Alignment=2"
+    )
 
 
 def run(cmd, quiet=True):
@@ -280,15 +312,28 @@ def extract_keywords_cc(narration_text: str) -> list:
         return []
 
 
-def pexels_video(kw, used: set):
+def pexels_get(url, key, params):
+    """429/5xx 最多重试三次，等待 2/4/8 秒。"""
+    for attempt in range(4):
+        response = requests.get(url, headers={"Authorization": key},
+                                params=params, timeout=30)
+        if response.status_code != 429 and not 500 <= response.status_code <= 599:
+            return response
+        if attempt == 3:
+            response.raise_for_status()
+            return response
+        delay = 2 ** (attempt + 1)
+        log(f"Pexels HTTP {response.status_code}，{delay}s 后重试")
+        time.sleep(delay)
+
+
+def pexels_video(kw, used: set, orientation="landscape"):
     key = os.environ.get("PEXELS_API_KEY")
     if not key:
         return None
     try:
-        r = requests.get("https://api.pexels.com/videos/search",
-                         headers={"Authorization": key},
-                         params={"query": kw, "per_page": 8,
-                                 "orientation": "landscape"}, timeout=30)
+        r = pexels_get("https://api.pexels.com/videos/search", key,
+                       {"query": kw, "per_page": 8, "orientation": orientation})
         for v in r.json().get("videos", []):
             if f"pexels-v-{v['id']}" in used:
                 continue
@@ -304,15 +349,13 @@ def pexels_video(kw, used: set):
     return None
 
 
-def pexels_photo(kw, used: set):
+def pexels_photo(kw, used: set, orientation="landscape"):
     key = os.environ.get("PEXELS_API_KEY")
     if not key:
         return None
     try:
-        r = requests.get("https://api.pexels.com/v1/search",
-                         headers={"Authorization": key},
-                         params={"query": kw, "per_page": 8,
-                                 "orientation": "landscape"}, timeout=30)
+        r = pexels_get("https://api.pexels.com/v1/search", key,
+                       {"query": kw, "per_page": 8, "orientation": orientation})
         for p in r.json().get("photos", []):
             if f"pexels-p-{p['id']}" in used:
                 continue
@@ -324,7 +367,7 @@ def pexels_photo(kw, used: set):
     return None
 
 
-def unsplash_photo(kw, used: set):
+def unsplash_photo(kw, used: set, orientation="landscape"):
     """Unsplash 免版权图片搜索 (在 pexels_photo 之后兜底)。
     端点: GET https://api.unsplash.com/search/photos
     认证: Authorization: Client-ID {ACCESS_KEY}
@@ -337,7 +380,7 @@ def unsplash_photo(kw, used: set):
         r = requests.get("https://api.unsplash.com/search/photos",
                          headers={"Authorization": f"Client-ID {key}"},
                          params={"query": kw, "per_page": 8,
-                                 "orientation": "landscape"}, timeout=30)
+                                 "orientation": orientation}, timeout=30)
         for p in r.json().get("results", []):
             if f"unsplash-p-{p['id']}" in used:
                 continue
@@ -428,6 +471,7 @@ def download(url: str, out: Path):
 
 def cmd_assets(proj: Path):
     cfg = load_project(proj)
+    orientation = "portrait" if cfg.get("orientation") == "portrait" else "landscape"
     m = load_manifest(proj)
     used = {s.get("asset_id") for s in m["scenes"].values() if s.get("asset_id")}
     credits = []
@@ -442,9 +486,9 @@ def cmd_assets(proj: Path):
         found = None
         for kw in kws:
             if want in ("video", "auto"):
-                found = pexels_video(kw, used) or coverr_video(kw, used) or pixabay_video(kw, used)
+                found = pexels_video(kw, used, orientation) or coverr_video(kw, used) or pixabay_video(kw, used)
             if not found and want in ("image", "auto"):
-                found = pexels_photo(kw, used) or unsplash_photo(kw, used)
+                found = pexels_photo(kw, used, orientation) or unsplash_photo(kw, used, orientation)
             if found:
                 log(f"场景{key} 命中素材 [{kw}] → {found['id']}")
                 break
@@ -560,6 +604,7 @@ def render_scene(proj: Path, cfg, key: str, rec: dict) -> Path:
 
 def cmd_render(proj: Path):
     cfg = load_project(proj)
+    subtitle_style = sub_style()
     m = load_manifest(proj)
     build = proj / "build"
     clips = []
@@ -646,7 +691,7 @@ def cmd_render(proj: Path):
     final = proj / "output" / "final.mp4"
     final.parent.mkdir(exist_ok=True)
     srt_esc = str(srt.resolve()).replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
-    sub_filter = f"subtitles='{srt_esc}':force_style='{SUB_STYLE}'"
+    sub_filter = f"subtitles='{srt_esc}':force_style='{subtitle_style}'"
 
     # BGM 选择: bgm_pool > bgm > 无 BGM
     bgm_path = None
@@ -756,8 +801,9 @@ def _find_images(proj: Path) -> list:
     return sorted(seen.values(), key=lambda p: p.name)
 
 
-def cmd_wechat_video(proj: Path, title: str = ""):
+def cmd_wechat_video(proj: Path, title: str = "", voice: str = None):
     """竖屏图文成片：文章 .md → TTS → 配图轮播 → 字幕 → 1080×1920 MP4"""
+    font_name, font_path = find_cjk_font()
     # ---------- 1. 读文章 ----------
     mds = sorted(proj.glob("*.md"))
     if not mds:
@@ -782,7 +828,7 @@ def cmd_wechat_video(proj: Path, title: str = ""):
         log(f"  └ {img.name}")
 
     # ---------- 3. TTS ----------
-    voice = "zh-CN-YunxiNeural"
+    voice = voice if voice is not None else os.environ.get("CF_VOICE", "zh-CN-YunxiNeural")
     rate = "+0%"
     build_dir = proj / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
@@ -847,7 +893,6 @@ def cmd_wechat_video(proj: Path, title: str = ""):
     else:
         # 无配图 → 纯色背景 + 标题文字
         log("无配图，生成文字背景视频")
-        font_path = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
         # 单行标题，居中显示
         bg_filter = (
             f"color=s={w}x{h}:c=#1a1a2e:d={dur:.3f}:r={FPS}[bg];"
@@ -872,7 +917,7 @@ def cmd_wechat_video(proj: Path, title: str = ""):
     output_dir.mkdir(parents=True, exist_ok=True)
     final = output_dir / "wechat_video.mp4"
     srt_esc = str(audio_srt.resolve()).replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
-    sub_filter = f"subtitles='{srt_esc}':force_style='{SUB_STYLE}'"
+    sub_filter = f"subtitles='{srt_esc}':force_style='{sub_style(font_name)}'"
 
     run([
         "ffmpeg", "-y", "-i", str(merged), "-i", str(audio_mp3),
@@ -965,6 +1010,7 @@ def main():
     wp = sub.add_parser("wechat_video", help="竖屏图文成片（视频号）")
     wp.add_argument("project", help="项目目录（内含 .md 文章 + 配图）")
     wp.add_argument("--title", default="", help="文章标题（可选，默认从 markdown 提取）")
+    wp.add_argument("--voice", default=None, help="配音音色（默认 CF_VOICE 或 zh-CN-YunxiNeural）")
 
     # 批量命令（支持多个项目目录或一个 topics.json）
     bp = sub.add_parser("batch", help="批量处理多个项目（无人值守）")
@@ -994,7 +1040,7 @@ def main():
                 "all": cmd_all, "clean": cmd_clean}
 
     if args.command == "wechat_video":
-        cmd_wechat_video(proj, title=args.title)
+        cmd_wechat_video(proj, title=args.title, voice=args.voice)
     else:
         dispatch[args.command](proj)
 

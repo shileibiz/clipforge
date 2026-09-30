@@ -1,0 +1,31 @@
+# 选题三：AI 爆款文案公式（来源：MPT topics_10.md 选题三）
+title: 自媒体起号没灵感？3个指令让AI帮你写爆款文案
+voice: zh-CN-XiaoxiaoNeural
+rate: "+8%"
+subtitle_mode: sentence
+bgm: ""
+bgm_volume: 0.12
+orientation: portrait
+
+scenes:
+  - text: 同样是做自媒体，为什么别人日更爆款，你想半天憋不出开头？差的不是文笔，是方法。
+    keywords: [content creator camera ring light, frustrated person laptop head hands, vlogger recording studio]
+    asset_type: auto
+  - text: 打开DeepSeek或者通义千问，都是免费的。记住这个万能公式：受众，加痛点，加情绪钩子。
+    keywords: [artificial intelligence robot screen, chatbot conversation interface, programmer screen code]
+    asset_type: video
+  - text: 举个例子。输入：目标人群是职场妈妈，痛点是没时间学习，给我三个黄金开头，要求制造焦虑加反转。
+    keywords: [mother working laptop home, busy mom multitasking, woman thinking window]
+    asset_type: auto
+  - text: 几秒钟，三个开头就出来了，每一条都直戳人心。挑一条顺眼的，再让它展开正文。
+    keywords: [reading screen text closeup, scrolling phone content, choosing on tablet]
+    asset_type: auto
+  - text: 还没完。让它用同样的风格再写十条，批量生产选题库，一个月的脚本一天写完。
+    keywords: [calendar planner desk, writing notes notebook, stack of papers ideas]
+    asset_type: auto
+  - text: 最后让它加一句引导点赞的口号，配上你的视频，完播率和互动率肉眼可见地涨。
+    keywords: [smartphone social media likes, phone notifications likes, hands holding phone app]
+    asset_type: video
+  - text: 这个公式我放在评论区了，直接抄。关注我，每天一个免费AI神器。
+    keywords: [neon lights city night, sunrise mountain person, desk notebook coffee]
+    asset_type: auto

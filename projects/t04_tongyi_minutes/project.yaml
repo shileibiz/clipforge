@@ -1,0 +1,31 @@
+# 选题四：通义听悟 会议纪要（来源：MPT topics_10.md 选题四）
+title: 开会还在傻傻记笔记？这个免费AI神器把语音秒变结构化纪要
+voice: zh-CN-XiaoxiaoNeural
+rate: "+8%"
+subtitle_mode: sentence
+bgm: ""
+bgm_volume: 0.12
+orientation: portrait
+
+scenes:
+  - text: 开两小时的会，纪要写一小时，领导还说你漏了重点？这个阿里免费工具，开会再也不用动笔。
+    keywords: [boring office meeting, business meeting conference room, tired taking notes meeting]
+    asset_type: auto
+  - text: 它叫通义听悟，手机电脑都能用。开会点一下录音，它实时把每个人的话转成文字。
+    keywords: [smartphone recording audio app, voice recording phone, laptop video call meeting]
+    asset_type: video
+  - text: 最强的是区分说话人。谁说了什么，自动分段标注。复盘扯皮的时候，一翻就知道谁拍过胸脯。
+    keywords: [people talking office discussion, colleagues conversation meeting, team discussion table]
+    asset_type: auto
+  - text: 会议一结束，它自动提炼纪要。讨论要点、待办事项、责任人，直接生成，复制就能发群里。
+    keywords: [checklist clipboard document, todo list notebook, organizing notes desk]
+    asset_type: auto
+  - text: 两小时的录音，它两分钟梳理完。还能一键跳听重点片段，漏掉的细节随时回放。
+    keywords: [headphones listening audio, playback waveform screen, person headphones computer]
+    asset_type: auto
+  - text: 访客、面试、网课、采访，全都适用。转写和总结功能每个账号每天有免费额度，普通人完全够用。
+    keywords: [online learning laptop student, podcast microphone interview, online class study]
+    asset_type: auto
+  - text: 开会只带耳朵，纪要交给AI。关注我，下期讲做视频不用露脸的免费配音神器。
+    keywords: [relaxed person coffee break, minimalist desk setup calm, sunset window office]
+    asset_type: auto

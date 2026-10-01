@@ -159,6 +159,17 @@ def media_duration(path: Path) -> float:
     return float(ffprobe_json(path)["format"]["duration"])
 
 
+def stream_duration(path: Path, kind: str, info: dict = None) -> float:
+    """单条视频/音频流时长(容器时长取各流最大值, 会掩盖某一轨提前结束)。无该流返回 0。"""
+    info = info or ffprobe_json(path)
+    for s in info["streams"]:
+        if s.get("codec_type") == kind:
+            if s.get("duration"):
+                return float(s["duration"])
+            return float(info["format"]["duration"])
+    return 0.0
+
+
 def fmt_srt_time(t: float) -> str:
     ms = int(round(t * 1000))
     h, ms = divmod(ms, 3600000)
@@ -334,13 +345,25 @@ def pexels_get(url, key, params):
         time.sleep(delay)
 
 
-def pexels_video(kw, used: set, orientation="landscape"):
+def _pick_long_enough(cands, min_dur):
+    """cands: [(素材时长或None, 结果)] 按 API 相关度排序。优先取首个时长 ≥ 场景时长的;
+    都不够长则取最长的(render 阶段 stream_loop + tpad 补足视频轨)。"""
+    if not cands:
+        return None
+    for d, found in cands:
+        if d is not None and d >= min_dur:
+            return found
+    return max(cands, key=lambda c: c[0] or 0)[1]
+
+
+def pexels_video(kw, used: set, orientation="landscape", min_dur=0.0):
     key = os.environ.get("PEXELS_API_KEY")
     if not key:
         return None
     try:
         r = pexels_get("https://api.pexels.com/videos/search", key,
                        {"query": kw, "per_page": 8, "orientation": orientation})
+        cands = []
         for v in r.json().get("videos", []):
             if f"pexels-v-{v['id']}" in used:
                 continue
@@ -348,9 +371,11 @@ def pexels_video(kw, used: set, orientation="landscape"):
                             if f.get("width") and f["width"] >= 1280],
                            key=lambda f: -f["width"])
             if files:
-                return {"kind": "video", "url": files[0]["link"],
-                        "id": f"pexels-v-{v['id']}", "ext": ".mp4",
-                        "credit": f"Pexels video {v['url']}"}
+                cands.append((v.get("duration"),
+                              {"kind": "video", "url": files[0]["link"],
+                               "id": f"pexels-v-{v['id']}", "ext": ".mp4",
+                               "credit": f"Pexels video {v['url']}"}))
+        return _pick_long_enough(cands, min_dur)
     except Exception as e:
         log(f"Pexels 视频搜索失败: {e}")
     return None
@@ -402,27 +427,35 @@ def unsplash_photo(kw, used: set, orientation="landscape"):
     return None
 
 
-def pixabay_video(kw, used: set):
+def pixabay_video(kw, used: set, orientation="landscape", min_dur=0.0):
+    """Pixabay 视频 API 无 orientation 参数, 按返回文件宽高本地过滤方向。"""
     key = os.environ.get("PIXABAY_API_KEY")
     if not key:
         return None
     try:
         r = requests.get("https://pixabay.com/api/videos/",
                          params={"key": key, "q": kw, "per_page": 8}, timeout=30)
+        cands = []
         for v in r.json().get("hits", []):
             if f"pixabay-v-{v['id']}" in used:
                 continue
             vf = v["videos"].get("large") or v["videos"].get("medium")
-            if vf and vf.get("url"):
-                return {"kind": "video", "url": vf["url"],
-                        "id": f"pixabay-v-{v['id']}", "ext": ".mp4",
-                        "credit": f"Pixabay video {v.get('pageURL','')}"}
+            if not (vf and vf.get("url")):
+                continue
+            fw, fh = vf.get("width") or 0, vf.get("height") or 0
+            if fw and fh and (fh > fw) != (orientation == "portrait"):
+                continue
+            cands.append((v.get("duration"),
+                          {"kind": "video", "url": vf["url"],
+                           "id": f"pixabay-v-{v['id']}", "ext": ".mp4",
+                           "credit": f"Pixabay video {v.get('pageURL','')}"}))
+        return _pick_long_enough(cands, min_dur)
     except Exception as e:
         log(f"Pixabay 视频搜索失败: {e}")
     return None
 
 
-def coverr_video(kw, used: set):
+def coverr_video(kw, used: set, min_dur=0.0):
     """Coverr 免版权视频搜索 (插在 Pexels 与 Pixabay 之间)。
     端点: https://coverr.co/api/videos?query=...&urls=true
     认证: Authorization: Bearer {COVERR_API_KEY}
@@ -437,14 +470,17 @@ def coverr_video(kw, used: set):
                          params={"query": kw, "urls": "true",
                                  "page_size": 8, "page": 0},
                          timeout=30)
+        cands = []
         for v in r.json().get("hits", []):
             if f"coverr-v-{v['id']}" in used:
                 continue
             urls = v.get("urls")
             if urls and urls.get("mp4"):
-                return {"kind": "video", "url": urls["mp4"],
-                        "id": f"coverr-v-{v['id']}", "ext": ".mp4",
-                        "credit": f"Coverr video {v.get('slug', v['id'])}"}
+                cands.append((v.get("duration"),
+                              {"kind": "video", "url": urls["mp4"],
+                               "id": f"coverr-v-{v['id']}", "ext": ".mp4",
+                               "credit": f"Coverr video {v.get('slug', v['id'])}"}))
+        return _pick_long_enough(cands, min_dur)
     except Exception as e:
         log(f"Coverr 视频搜索失败: {e}")
     return None
@@ -490,10 +526,13 @@ def cmd_assets(proj: Path):
             continue
         kws = sc.get("keywords") or extract_keywords_cc(sc["text"]) or ["abstract background"]
         want = sc.get("asset_type", "auto")
+        need = rec.get("duration") or 0.0   # 场景口播时长, 视频素材优先选不短于它的
         found = None
         for kw in kws:
             if want in ("video", "auto"):
-                found = pexels_video(kw, used, orientation) or coverr_video(kw, used) or pixabay_video(kw, used)
+                found = (pexels_video(kw, used, orientation, min_dur=need)
+                         or coverr_video(kw, used, min_dur=need)
+                         or pixabay_video(kw, used, orientation, min_dur=need))
             if not found and want in ("image", "auto"):
                 found = pexels_photo(kw, used, orientation) or unsplash_photo(kw, used, orientation)
             if found:
@@ -614,19 +653,23 @@ def render_scene(proj: Path, cfg, key: str, rec: dict) -> Path:
     audio = proj / "audio" / f"scene_{key}.mp3"
     out = proj / "build" / f"clip_{key}.mp4"
     dur = rec["duration"]
-    if out.exists() and abs(media_duration(out) - dur) < 0.5:
+    # 跳过判断看视频流时长: 容器时长取最长轨, 会放过视频轨不足的旧片段
+    if out.exists() and abs(stream_duration(out, "video") - dur) < 0.5:
         log(f"场景{key} 片段已渲染,跳过")
         return out
     if rec["asset_kind"] == "video":
+        # 素材短于口播: stream_loop 循环素材; 万一循环失效, tpad 冻结末帧兜底;
+        # 由 -t 截到场景时长(不用 -shortest, 避免掩盖视频轨不足)
         vf = (f"scale={w}:{h}:force_original_aspect_ratio=increase,"
-              f"crop={w}:{h},fps={FPS},setsar=1")
+              f"crop={w}:{h},fps={FPS},setsar=1,"
+              f"tpad=stop_mode=clone:stop_duration={dur:.3f}")
         run(["ffmpeg", "-y", "-stream_loop", "-1", "-i", str(asset),
              "-i", str(audio), "-t", f"{dur:.3f}",
              "-filter_complex", f"[0:v]{vf}[v]",
              "-map", "[v]", "-map", "1:a",
              "-c:v", "libx264", "-preset", PRESET, "-crf", str(CRF),
              "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
-             "-shortest", str(out)])
+             str(out)])
     else:  # 图片 → Ken Burns 缓推
         frames = max(int(dur * FPS), 1)
         vf = (f"scale={w*2}:-2,"
@@ -640,6 +683,9 @@ def render_scene(proj: Path, cfg, key: str, rec: dict) -> Path:
              "-c:v", "libx264", "-preset", PRESET, "-crf", str(CRF),
              "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
              "-shortest", str(out)])
+    vdur = stream_duration(out, "video")
+    if vdur < dur - 0.5:
+        die(f"场景{key} 片段视频轨 {vdur:.2f}s < 口播 {dur:.2f}s,检查素材 {asset} 是否损坏")
     log(f"场景{key} 渲染完成 ({dur:.1f}s)")
     return out
 
@@ -787,6 +833,8 @@ def cmd_check(proj: Path):
         die("找不到成片,先跑 render")
     info = ffprobe_json(final)
     vdur = float(info["format"]["duration"])
+    vtrack = stream_duration(final, "video", info)
+    atrack = stream_duration(final, "audio", info)
     adur_total = sum(s["duration"] for s in m["scenes"].values())
     # xfade 重叠会吞掉部分时长, 期望值以 timeline.json(真实时间轴)为准
     tl_path = proj / "build" / "timeline.json"
@@ -806,6 +854,10 @@ def cmd_check(proj: Path):
         "expected_duration": round(ref_dur, 2),
         "raw_narration_duration": round(adur_total, 2),
         "duration_delta": round(abs(vdur - ref_dur), 2),
+        "video_track_duration": round(vtrack, 2),
+        "audio_track_duration": round(atrack, 2),
+        "video_track_delta": round(abs(vtrack - ref_dur), 2),
+        "audio_track_delta": round(abs(atrack - ref_dur), 2),
         "resolution": f"{vstreams[0]['width']}x{vstreams[0]['height']}" if vstreams else "none",
         "has_audio": bool(astreams),
         "srt_exists": (proj / "output" / "final.srt").exists(),
@@ -814,6 +866,13 @@ def cmd_check(proj: Path):
     problems = []
     if report["duration_delta"] > 1.5:
         problems.append(f"成片与口播总时长差 {report['duration_delta']}s > 1.5s")
+    # 容器时长取最长轨, 视频轨提前结束(后段黑屏)只能分轨校验才拦得住
+    if vstreams and report["video_track_delta"] > 1.5:
+        problems.append(f"视频轨时长 {report['video_track_duration']}s 与期望时间轴 "
+                        f"{report['expected_duration']}s 差 {report['video_track_delta']}s > 1.5s")
+    if astreams and report["audio_track_delta"] > 1.5:
+        problems.append(f"音频轨时长 {report['audio_track_duration']}s 与期望时间轴 "
+                        f"{report['expected_duration']}s 差 {report['audio_track_delta']}s > 1.5s")
     if vstreams and (vstreams[0]["width"], vstreams[0]["height"]) != (w, h):
         problems.append(f"分辨率 {report['resolution']} != {w}x{h}")
     if not astreams:

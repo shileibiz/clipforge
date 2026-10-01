@@ -233,6 +233,7 @@ CC 观察输出，任一阶段失败按 §4 处置后重跑同一条命令（幂
 | Coverr/Unsplash 无结果 | 关键词过偏 | 不影响其他源正常兜底 |
 | 字幕乱码/方框 | 缺 CJK 字体 | `apt install fonts-noto-cjk` 或改用 WenQuanYi |
 | duration_delta > 1.5s | 某场景 clip 渲染截断 | 删对应 build/clip_XX.mp4 重跑 render |
+| QC 报「视频轨/音频轨时长与期望时间轴差 > 1.5s」 | 某轨提前结束（如素材短于口播、旧版 clip 视频轨不足），容器时长取最长轨所以 duration_delta 看不出 | ffprobe 逐个查 build/clip_XX.mp4 的视频流时长，删掉短于 manifest duration 的 clip（或整删 build/clip_*.mp4）重跑 render+check；render 再报「片段视频轨 < 口播」则素材损坏，删 assets/scene_XX.* 与 manifest 该场景 asset_ok 后重跑 assets |
 | 竖版需求（抖音/Shorts） | — | project.yaml 设 `orientation: portrait` |
 | 某场景素材与口播语义错位 | keywords 选词不当 | 改该场景 keywords → 删对应 assets/scene_XX.* + manifest 中该场景 asset_ok → 重跑 all |
 

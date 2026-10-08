@@ -63,7 +63,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--once', action='store_true', help='跑一轮就退出(默认常驻循环)')
     args = ap.parse_args()
-    # transfer 共享匿名可写(MPT 归档器同款模式, 无需凭据)
+    # transfer 共享 guest 会话(2026-10-02 实测匿名裸连已不行, guest+空密码可读写)
+    import smbclient
+    smbclient.register_session('192.168.2.180', username='guest', password='')
     state = load_state()
     while True:
         moved = 0
